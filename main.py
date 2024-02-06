@@ -223,7 +223,7 @@ async def main():
 publishBmeValues()
 publishDoorState()
 
-schedule.every(5).seconds.do(flashLeds)
+schedule.every(1).seconds.do(flashLeds)
 schedule.every(10).seconds.do(publishBmeValues)
 schedule.every(60).seconds.do(publishDoorState)
 
