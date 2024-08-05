@@ -2,6 +2,7 @@
 
 This code is under developing ...
 The hardware and software is tested and working but is far from optimal.
+The project has been paused for some time due to necessary priorities.
 All required files are not yet provided in this repository.
 Code and readme will be updated ...
 
@@ -37,10 +38,10 @@ The program has a MQTT callback function. If the function recieves MQTT message 
 from eighter github repository or local HTTP-server. Other messages will trigger the door relay to open/stop/close the garage door.
 
 Every 5 seconds:   Flash LEDs
+
 Every 10 seconds:  Publish BME values over MQTT
+
 Every 60 seconds:  Publish door state
 
-Door state (open // closed // moving // obstructed) and PIR sensor state
+Door states (open / closed / moving / obstructed) and PIR sensor state
 are updated using interrups request (IRQ) on rising pins.
-
-Code and readme will 
