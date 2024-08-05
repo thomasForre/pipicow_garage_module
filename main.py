@@ -87,9 +87,6 @@ mqttServer = secrets.hassServer
 client_id = 'PiPicoW'
 subscriptionTopic = "pipicow"
 
-def testOTAUpdater():
-    ota_updater.download_and_install_update_if_available()
-
 # MQTT callback function
 def mqttSubscriptionCallback(topic, message):
     # Update command
