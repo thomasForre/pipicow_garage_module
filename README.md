@@ -1,6 +1,6 @@
 # pipicow_garage
 
-This code is under developing ...
+This code is under developing.
 The hardware and software is tested and working but is far from optimal.
 The project has been paused for some time due to necessary priorities.
 All required files are not yet provided in this repository.
