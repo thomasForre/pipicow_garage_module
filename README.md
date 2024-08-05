@@ -1,6 +1,10 @@
 # pipicow_garage
 
-This code is under developing...
+This code is under developing ...
+The hardware and software is tested and working but is far from optimal.
+All required files are not yet provided in this repository.
+Code and readme will be updated ...
+
 
 This code is installed on a Raspberry Pi Pico who is mounted in the garage
 for controlling lights and garage door and logging.
@@ -27,9 +31,16 @@ One 24 V relay is installed to detect if door is moving. The door opener is prov
 
 SOFTWARE
 
-The program starts automatically when the Pi Pico is powered.
+The program starts automatically when the Raspberry Pi Pico is powered up.
 It connects to WIFI and MQTT broker before it starts publishing BME values and door state via MQTT.
-If the program recieves MQTT message including the string "OTA" it starts 
+The program has a MQTT callback function. If the function recieves MQTT message including the string "OTA" it starts over the air update
+from eighter github repository or local HTTP-server. Other messages will trigger the door relay to open/stop/close the garage door.
 
+Every 5 seconds:   Flash LEDs
+Every 10 seconds:  Publish BME values over MQTT
+Every 60 seconds:  Publish door state
 
+Door state (open // closed // moving // obstructed) and PIR sensor state
+are updated using interrups request (IRQ) on rising pins.
 
+Code and readme will 
