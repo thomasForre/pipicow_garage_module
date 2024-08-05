@@ -1,5 +1,7 @@
 # pipicow_garage
 
+This code is under developing...
+
 This code is installed on a Raspberry Pi Pico who is mounted in the garage
 for controlling lights and garage door and logging.
 
@@ -21,5 +23,11 @@ Relays:
 One 3.3 V is installed to trigger door operation, Start/Stop.
 One 12 V relay to control signal from laser sensor.
 One 24 V relay is installed to detect if door is moving. The door opener is providing a 24 V signal while door is moving.
+
+
+SOFTWARE
+
+
+
 
 
