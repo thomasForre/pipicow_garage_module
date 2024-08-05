@@ -25,8 +25,8 @@ switchDoorObstructed = Pin(8, Pin.IN, Pin.PULL_DOWN) #        BOARD INDEX 11    
 realyDoorTrigger = Pin(6, Pin.OUT, Pin.PULL_UP, value=1) #    BOARD INDEX 09    // Relay to trigger door, initialized to HIGH since relay is active LOW
 sensorPIR = Pin(9, Pin.IN, Pin.PULL_DOWN) #                   BOARD INDEX 12    // PIR motion sensor
 
-ledAlive = Pin(12, mode=Pin.OUT)  # -------B-L-U-E-------     BOARD INDEX 16   // LED for system alive
-ledInternal = Pin("LED", Pin.OUT) # ---I-N-T-E-R-N-A-L---     BOARD INDEX N/A  // Internal LED on PiPicoW
+ledAlive = Pin(12, mode=Pin.OUT)  # -------B-L-U-E-------     BOARD INDEX 16    // LED for system alive
+ledInternal = Pin("LED", Pin.OUT) # ---I-N-T-E-R-N-A-L---     BOARD INDEX N/A   // Internal LED on PiPicoW
 
 async def blinkLed(led, nTimes, periodMs):
     # Toggle led nTimes for periodMs milliseconds
