@@ -1,12 +1,12 @@
-# Garage door trigger with limit switch for open and closed,
-# relay for moving door, PIR sensor, BME280 for temperature, humidity and pressure
-# and IR beam for detecting obstruction of garage door
+# Connect Raspberry PiPicoW to WIFI and MQTT
+
 import sys
 import time
 import bme280
 import asyncio
 import secrets
 import schedule
+from otaUpdater import *
 from machine import Pin, I2C, WDT, Timer
 from umqtt.simple import MQTTClient
 from connections import *
@@ -25,8 +25,8 @@ switchDoorObstructed = Pin(8, Pin.IN, Pin.PULL_DOWN) #        BOARD INDEX 11    
 realyDoorTrigger = Pin(6, Pin.OUT, Pin.PULL_UP, value=1) #    BOARD INDEX 09    // Relay to trigger door, initialized to HIGH since relay is active LOW
 sensorPIR = Pin(9, Pin.IN, Pin.PULL_DOWN) #                   BOARD INDEX 12    // PIR motion sensor
 
-ledAlive = Pin(12, mode=Pin.OUT)  # -------B-L-U-E------- BOARD INDEX 16   // LED for system alive
-ledInternal = Pin("LED", Pin.OUT) # ---I-N-T-E-R-N-A-L--- BOARD INDEX N/A  // Internal LED on PiPicoW
+ledAlive = Pin(12, mode=Pin.OUT)  # -------B-L-U-E-------     BOARD INDEX 16   // LED for system alive
+ledInternal = Pin("LED", Pin.OUT) # ---I-N-T-E-R-N-A-L---     BOARD INDEX N/A  // Internal LED on PiPicoW
 
 async def blinkLed(led, nTimes, periodMs):
     # Toggle led nTimes for periodMs milliseconds
@@ -75,6 +75,7 @@ def writeToLog(logString):
         logFile.write("   " + logString + "\n")
     return
 
+
 try:
     wifiConnect()
 except RuntimeError as err:
@@ -86,15 +87,27 @@ mqttServer = secrets.hassServer
 client_id = 'PiPicoW'
 subscriptionTopic = "pipicow"
 
+def testOTAUpdater():
+    ota_updater.download_and_install_update_if_available()
 
 # MQTT callback function
 def mqttSubscriptionCallback(topic, message):
-#     if switchDoorObstructed.value() == 1:
-#         return
-    realyDoorTrigger.value(0)
-    client.publish("pipicow/info", "door relay pulse")
-    time.sleep_ms(500)
-    realyDoorTrigger.value(1)
+    # Update command
+    if "OTA" in message:
+        client.publish("pipicow/info", "Update command recieved...")
+        if ota_updater.download_and_install_update_if_available():
+            client.publish("pipicow/info", "Code updated, resetting machine...")
+            time.sleep(0.25)
+            machine.reset()
+            return
+    # Door trigger command
+    else:
+        realyDoorTrigger.value(0)
+        client.publish("pipicow/info", "door relay pulse")
+        time.sleep(0.5)
+        realyDoorTrigger.value(1)
+        return
+
 
 # MQTT connect
 def mqttConnect():
@@ -106,6 +119,7 @@ def mqttConnect():
     print('Subscribed to topic: "%s"'%(subscriptionTopic))
     print(f"Subscribed to topic {subscriptionTopic}")
     return client
+
 
 # MQTT reconnect
 def mqttReconnect():
@@ -122,7 +136,9 @@ except OSError as e:
     mqttReconnect()
 # End MQTT section
 
+
 # Handler section
+
 # OPEN door
 def doorOpenHandler(pin):
     time.sleep_ms(100)
@@ -137,6 +153,7 @@ def doorOpenHandler(pin):
     if not doorStateOpen:
         doorStateOpen = True
         client.publish("pipicow/doorState", "open")
+
 
 # CLOSED door
 def doorClosedHandler(pin):
@@ -153,6 +170,7 @@ def doorClosedHandler(pin):
     if not doorStateClosed:
         doorStateClosed = True
         client.publish("pipicow/doorState", "closed")
+
 
 # MOVING door
 def doorMovingHandlerRising(pin):
@@ -173,6 +191,7 @@ def doorMovingHandlerRising(pin):
         doorStateMoving = False
         client.publish("pipicow/doorState", "stopped")
         
+        
 # OBSTRUCTED door
 def doorObstructedHandler(pin):
     time.sleep_ms(100)
@@ -181,6 +200,12 @@ def doorObstructedHandler(pin):
         doorStateObstructed = True
         client.publish("pipicow/doorState", "obstructed")
         return True
+#     else:
+#         print(f"Obstructed = {switchDoorObstructed.value()}")
+#         doorStateObstructed = True
+#         client.publish("pipicow/doorState", "obstructed")
+#         return True
+    
 
 # PIR sensor
 def sensorPirHandler(pin):
@@ -190,6 +215,7 @@ def sensorPirHandler(pin):
 
 # End handler section
 
+
 # MAIN
 def publishBmeValues():
     bme = bme280.BME280(i2c=i2c)
@@ -197,11 +223,13 @@ def publishBmeValues():
     client.publish("pipicow/bme280/pressure", bme.values[1])
     client.publish("pipicow/bme280/humidity", bme.values[2])
 
+
 def publishDoorState():
     client.publish("pipicow/doorStateOpen", str(switchDoorOpen.value()))
     client.publish("pipicow/doorStateClosed", str(switchDoorClosed.value()))
     client.publish("pipicow/doorStateMoving", str(relayDoorMoving.value()))
     client.publish("pipicow/doorStateObstructed", str(switchDoorObstructed.value()))
+    
 
 def flashLeds():
     ledAlive.toggle()
@@ -209,6 +237,7 @@ def flashLeds():
     time.sleep(0.05)
     ledAlive.toggle()
     ledInternal.toggle()
+
 
 async def main():
     while True:
@@ -223,7 +252,7 @@ async def main():
 publishBmeValues()
 publishDoorState()
 
-schedule.every(1).seconds.do(flashLeds)
+schedule.every(5).seconds.do(flashLeds)
 schedule.every(10).seconds.do(publishBmeValues)
 schedule.every(60).seconds.do(publishDoorState)
 
@@ -235,3 +264,4 @@ switchDoorObstructed.irq(trigger=Pin.IRQ_RISING, handler=doorObstructedHandler)
 sensorPIR.irq(trigger=Pin.IRQ_RISING, handler=sensorPirHandler)
 
 asyncio.run(main())
+
