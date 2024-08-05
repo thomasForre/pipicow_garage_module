@@ -27,7 +27,9 @@ One 24 V relay is installed to detect if door is moving. The door opener is prov
 
 SOFTWARE
 
-
+The program starts automatically when the Pi Pico is powered.
+It connects to WIFI and MQTT broker before it starts publishing BME values and door state via MQTT.
+If the program recieves MQTT message including the string "OTA" it starts 
 
 
 
