@@ -43,7 +43,7 @@ SOFTWARE
 
 The program starts automatically when the Raspberry Pi Pico is powered up.
 It connects to WIFI and MQTT broker before it starts publishing BME values and door state via MQTT.
-The program has a MQTT callback function. If the function recieves MQTT message including the string "OTA" it starts over the air update
+The program has a MQTT callback function. If the function receives MQTT message including the string "OTA" it starts over the air update
 from eighter github repository or local HTTP-server. Other messages will trigger the door relay to open/stop/close the garage door.
 
 Every 5 seconds:   Flash LEDs
