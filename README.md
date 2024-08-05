@@ -7,7 +7,7 @@ All required files are not yet provided in this repository.
 Code and readme will be updated ...
 
 
-This code (main.py) is installed on a Raspberry Pi Pico who is mounted in the garage
+This code (main.py) is installed on a Raspberry Pi Pico who is mounted in my garage
 for controlling lights and garage door and logging.
 
 
