@@ -40,7 +40,7 @@ from eighter github repository or local HTTP-server. Other messages will trigger
 
 - **Every 5 seconds:**   Flash LEDs
 - **Every 10 seconds:**  Publish BME values over MQTT
-- **Every 60 seconds:**  Publish door state
+- **Every 60 seconds:**  Publish door state over MQTT
 
 Door states (open / closed / moving / obstructed) and PIR sensor state
 are updated using interrups request (IRQ) on rising pins.
