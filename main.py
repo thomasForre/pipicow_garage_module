@@ -21,7 +21,7 @@ i2c=I2C(0,sda=Pin(0), scl=Pin(1), freq=400000) #              BOARD INDEX 1 & 2 
 switchDoorOpen = Pin(3, Pin.IN, Pin.PULL_DOWN)   #            BOARD INDEX 5     // Limit switch OPEN
 switchDoorClosed = Pin(4, Pin.IN, Pin.PULL_DOWN) #            BOARD INDEX 6     // Limit switch CLOSED
 relayDoorMoving = Pin(7, Pin.IN, Pin.PULL_DOWN) #             BOARD INDEX 10    // Door moving sensor
-switchDoorObstructed = Pin(8, Pin.IN, Pin.PULL_DOWN) #        BOARD INDEX 11    // IR beam obstruction sensor
+switchDoorObstructed = Pin(8, Pin.IN, Pin.PULL_DOWN) #        BOARD INDEX 11    // Throug-beam obstruction sensor
 realyDoorTrigger = Pin(6, Pin.OUT, Pin.PULL_UP, value=1) #    BOARD INDEX 09    // Relay to trigger door, initialized to HIGH since relay is active LOW
 sensorPIR = Pin(9, Pin.IN, Pin.PULL_DOWN) #                   BOARD INDEX 12    // PIR motion sensor
 
