@@ -13,19 +13,23 @@ for controlling lights and garage door and logging.
 
 HARDWARE
 
+Microcontroller:
+Raspberry Pi Pico W (RP2040)
+
+
 BME280:
 Installed to log temperature, pressure and humidity in the garage.
 
 
 PIR sensor:
-Control lights in the garage.
+To detect motion for controlling lights in the garage.
 
 
 Limit switches:
 To get door position feedback,  Open/Closed
 
 
-Through beam sensor (laser):
+Through-beam sensor (laser):
 Laser sensor to detect obstructions for the door to prevent remote operation if door is obstructed.
 
 
@@ -43,7 +47,7 @@ SOFTWARE
 
 The program starts automatically when the Raspberry Pi Pico is powered up.
 It connects to WIFI and MQTT broker before it starts publishing BME values and door state via MQTT.
-The program has a MQTT callback function. If the function receives MQTT message including the string "OTA" it starts over the air update
+The program has a MQTT callback function. If the function receives a MQTT message including the string "OTA" it starts over the air update
 from eighter github repository or local HTTP-server. Other messages will trigger the door relay to open/stop/close the garage door.
 
 Every 5 seconds:   Flash LEDs
