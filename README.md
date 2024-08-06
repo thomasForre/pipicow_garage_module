@@ -11,39 +11,30 @@ This code (main.py) is installed on a Raspberry Pi Pico who is mounted in my gar
 for controlling lights and garage door and logging.
 
 
-HARDWARE
+## HARDWARE
 
-Microcontroller:
+### Microcontroller:
 Raspberry Pi Pico W (RP2040)
 
-
-BME280:
+### BME280:
 Installed to log temperature, pressure and humidity in the garage.
 
-
-PIR sensor:
+### PIR sensor:
 To detect motion for controlling lights in the garage.
 
-
-Limit switches:
+### Limit switches:
 To get door position feedback,  Open/Closed
 
-
-Through-beam sensor (laser):
+### Through-beam sensor (laser):
 Laser sensor to detect obstructions for the door to prevent remote operation if door is obstructed.
 
-
-Relays:
+### Relays:
 
 One 3.3 V is installed to trigger door operation, Start/Stop.
-
 One 12 V relay to control signal from laser sensor.
-
 One 24 V relay is installed to detect if door is moving. The door opener is providing a 24 V signal while door is moving.
 
-
-
-SOFTWARE
+## SOFTWARE
 
 The program starts automatically when the Raspberry Pi Pico is powered up.
 It connects to WIFI and MQTT broker before it starts publishing BME values and door state via MQTT.
