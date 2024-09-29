@@ -1,5 +1,5 @@
 # Connect Raspberry Pi PicoW to WIFI and MQTT
-# Main.py rewritten to a class by chatGTP
+# Main.py rewritten to a class structure by chatGTP
 
 import sys
 import time
@@ -120,9 +120,14 @@ class RaspberryPiPicoW:
 
     def publishBmeValues(self):
         bme = bme280.BME280(i2c=self.i2c)
-        self.client.publish("pipicow/bme280/temperature", bme.values[0])
-        self.client.publish("pipicow/bme280/pressure", bme.values[1])
-        self.client.publish("pipicow/bme280/humidity", bme.values[2])
+        try:
+            self.client.publish("pipicow/bme280/temperature", bme.values[0])
+            self.client.publish("pipicow/bme280/pressure", bme.values[1])
+            self.client.publish("pipicow/bme280/humidity", bme.values[2])
+            return True
+        except Exception as e:
+            self.writeToLog(f"Error publishing BME values: {e}")
+            return False
 
     def publishDoorState(self):
         self.client.publish("pipicow/doorStateOpen", str(self.switchDoorOpen.value()))
@@ -142,12 +147,6 @@ class RaspberryPiPicoW:
         schedule.every(10).seconds.do(self.publishBmeValues)
         schedule.every(60).seconds.do(self.publishDoorState)
 
-    async def main(self):
-        while True:
-            self.client.check_msg()
-            schedule.run_pending()
-            await asyncio.sleep(1)
-
     def doorOpenHandler(self, pin):
         time.sleep_ms(100)
         self.doorStateClosed = False
@@ -163,7 +162,7 @@ class RaspberryPiPicoW:
         if not self.doorStateClosed:
             self.doorStateClosed = True
             self.client.publish("pipicow/doorState", "closed")
-
+            
     def doorMovingHandler(self, pin):
         time.sleep_ms(1000)
         self.doorStateOpen = False
@@ -185,6 +184,12 @@ class RaspberryPiPicoW:
         time.sleep_ms(100)
         if self.sensorPIR.value():
             self.client.publish("pipicow/pir", "motion")
+
+    async def main(self):
+        while True:
+            self.client.check_msg()
+            schedule.run_pending()
+            await asyncio.sleep(1)
 
 if __name__ == "__main__":
     # Create an instance of the RaspberryPiPicoW class and start main
