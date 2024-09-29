@@ -1,6 +1,7 @@
 # Connect Raspberry Pi PicoW to WIFI and MQTT
 # Publish temperature, humidity and pressure
 # Publish garage door state
+
 # Main.py rewritten to a class structure by chatGTP
 
 import sys
@@ -8,6 +9,7 @@ import time
 import bme280
 import asyncio
 import secrets
+import ntptime
 import schedule
 from otaUpdater import *
 from machine import Pin, I2C, Timer
