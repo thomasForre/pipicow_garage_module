@@ -1,4 +1,6 @@
 # Connect Raspberry Pi PicoW to WIFI and MQTT
+# Publish temperature, humidity and pressure
+# Publish garage door state
 # Main.py rewritten to a class structure by chatGTP
 
 import sys
@@ -28,21 +30,39 @@ class RaspberryPiPicoW:
         # Flash LEDs on boot
         asyncio.run(self.blinkLed(self.ledInternal, 1, 500))
         asyncio.run(self.blinkLed(self.ledAlive, 1, 500))
-
+        
         try:
             wifiConnect()
         except RuntimeError as err:
+            print("Failed to connect to WIFI, resetting machine...")
             self.writeToLog(str(err.args[0]) + str(err.args[1]))
             machine.reset()
 
+        # Synchronize time with an NTP server
+        self.syncTime()
+
+        # Connenct to MQTT
         self.client = self.mqttConnect()
 
         # Set up handlers for GPIO interrupts
         self.setupHandlers()
 
-        # Schedule tasks
+        # Decide interval for tasks (seconds) and schedule tasks
+        self.flashLedsInterval = 5
+        self.publishBmeInterval = 60
+        self.publishDoorStateInterval = 60
         self.scheduleTasks()
 
+    def syncTime():
+        try:
+            # Synchronize the time with an NTP server
+            ntptime.settime()
+            writeToLog(self, "Time synchronized successfully.")
+            print("Time synchronized successfully.")
+        except Exception as e:
+            writeToLog(self, f"Failed to synchronize time: {e}")
+            print("Failed to synchronize time:", e)
+        
     def initializePins(self):
         self.switchDoorOpen = Pin(3, Pin.IN, Pin.PULL_DOWN)
         self.switchDoorClosed = Pin(4, Pin.IN, Pin.PULL_DOWN)
@@ -141,11 +161,11 @@ class RaspberryPiPicoW:
         time.sleep(0.05)
         self.ledAlive.toggle()
         self.ledInternal.toggle()
-
+    
     def scheduleTasks(self):
-        schedule.every(5).seconds.do(self.flashLeds)
-        schedule.every(10).seconds.do(self.publishBmeValues)
-        schedule.every(60).seconds.do(self.publishDoorState)
+        schedule.every(self.flashLedsInterval).seconds.do(self.flashLeds)
+        schedule.every(self.publishBmeInterval).seconds.do(self.publishBmeValues)
+        schedule.every(self.publishDoorStateInterval).seconds.do(self.publishDoorState)
 
     def doorOpenHandler(self, pin):
         time.sleep_ms(100)
