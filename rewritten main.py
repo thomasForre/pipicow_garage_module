@@ -17,6 +17,7 @@ from machine import Pin, I2C, Timer
 from umqtt.simple import MQTTClient
 from connections import *
 
+
 class RaspberryPiPicoW:
     def __init__(self):
         # Initialize MQTT parameters and pins
@@ -56,6 +57,7 @@ class RaspberryPiPicoW:
         self.publish_door_state_interval = 60
         self.schedule_tasks()
 
+    
     def sync_time(self):
         try:
             # Synchronize the time with an NTP server
@@ -144,9 +146,9 @@ class RaspberryPiPicoW:
     def mqtt_connect(self):
         max_attempts = 5
         attempt = 0
-
-        while attempt < max_attempt:
-            print("Connecting to MQTT broker...")
+        print("Connecting to MQTT broker...")
+        
+        while attempt < max_attempts:
             client = MQTTClient(self.client_id, self.mqtt_server, port=1883, user=self.hass_username, password=self.hass_password, keepalive=3600)
             try:
                 client.set_callback(self.mqtt_subscription_callback)
@@ -162,9 +164,9 @@ class RaspberryPiPicoW:
                 attempt += 1
                 time.sleep(3)
 
-            print("Max MQTT connection attempts reached, resetting machine in 3 seconds...")
-            time.sleep(3)
-            machine.reset()
+        print(f"Max MQTT connection attempts reached ({max_attempts}), resetting machine in 3 seconds...")
+        time.sleep(3)
+        machine.reset()
             
     def mqtt_reconnect(self):
         print("Failed to connect to the MQTT Broker. Reconnecting...")
