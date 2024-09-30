@@ -4,7 +4,8 @@
 
 # Main.py rewritten to a class structure by chatGTP
 
-import sys
+# import logging                           # <-- Start use logging instead of using the write_to_log function
+import sys 
 import time
 import bme280
 import asyncio
@@ -61,9 +62,11 @@ class RaspberryPiPicoW:
             ntptime.settime()
             self.write_to_log("Time synchronized successfully.")
             print("Time synchronized successfully.")
+            return True
         except Exception as err:
             self.write_to_log(f"Failed to synchronize time: {err}")
             print("Failed to synchronize time:", err)
+            return False
 
     def initialize_pins(self):
         self.switch_door_open = Pin(3, Pin.IN, Pin.PULL_DOWN)
@@ -74,12 +77,19 @@ class RaspberryPiPicoW:
         self.sensor_pir = Pin(9, Pin.IN, Pin.PULL_DOWN)
         self.led_alive = Pin(12, mode=Pin.OUT)
         self.led_internal = Pin("LED", Pin.OUT)
-
+    
     def initialize_flags(self):
         self.door_state_open = False
         self.door_state_closed = False
         self.door_state_moving = False
         self.door_state_obstructed = False
+    
+    def setup_handlers(self):
+        self.switch_door_open.irq(trigger=Pin.IRQ_RISING, handler=self.door_open_handler)
+        self.switch_door_closed.irq(trigger=Pin.IRQ_RISING, handler=self.door_closed_handler)
+        self.relay_door_moving.irq(trigger=Pin.IRQ_RISING | Pin.IRQ_FALLING, handler=self.door_moving_handler)
+        self.switch_door_obstructed.irq(trigger=Pin.IRQ_RISING, handler=self.door_obstructed_handler)
+        self.sensor_pir.irq(trigger=Pin.IRQ_RISING, handler=self.sensor_pir_handler)
 
     async def blink_led(self, led, n_times, period_ms):
         blink_speed = period_ms / 1000
@@ -140,13 +150,6 @@ class RaspberryPiPicoW:
         print(f"Subscribed to topic: {self.subscription_topic}")
         return client
 
-    def setup_handlers(self):
-        self.switch_door_open.irq(trigger=Pin.IRQ_RISING, handler=self.door_open_handler)
-        self.switch_door_closed.irq(trigger=Pin.IRQ_RISING, handler=self.door_closed_handler)
-        self.relay_door_moving.irq(trigger=Pin.IRQ_RISING | Pin.IRQ_FALLING, handler=self.door_moving_handler)
-        self.switch_door_obstructed.irq(trigger=Pin.IRQ_RISING, handler=self.door_obstructed_handler)
-        self.sensor_pir.irq(trigger=Pin.IRQ_RISING, handler=self.sensor_pir_handler)
-
     def publish_bme_values(self):
         bme = bme280.BME280(i2c=self.i2c)
         try:
@@ -154,8 +157,9 @@ class RaspberryPiPicoW:
             self.client.publish("pipicow/bme280/pressure", bme.values[1])
             self.client.publish("pipicow/bme280/humidity", bme.values[2])
             return True
-        except Exception as e:
-            self.write_to_log(f"Error publishing BME values: {e}")
+        except Exception as err:
+            self.write_to_log(f"Error publishing BME values: {err}")
+            print("Failed to publish BME values", err)
             return False
 
     def publish_door_state(self):
