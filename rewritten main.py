@@ -142,13 +142,34 @@ class RaspberryPiPicoW:
                 self.client.publish("pipicow/info", "BME request failed")
 
     def mqtt_connect(self):
-        client = MQTTClient(self.client_id, self.mqtt_server, port=1883, user=self.hass_username, password=self.hass_password, keepalive=3600)
-        client.set_callback(self.mqtt_subscription_callback)
-        client.connect()
-        client.subscribe(self.subscription_topic)
-        print(f"Connected to {self.mqtt_server} MQTT Broker")
-        print(f"Subscribed to topic: {self.subscription_topic}")
-        return client
+        max_attempts = 5
+        attempt = 0
+
+        while attempt < max_attempt:
+            print("Connecting to MQTT broker...")
+            client = MQTTClient(self.client_id, self.mqtt_server, port=1883, user=self.hass_username, password=self.hass_password, keepalive=3600)
+            try:
+                client.set_callback(self.mqtt_subscription_callback)
+                client.connect()
+                print(f"Connected to {self.mqtt_server} MQTT Broker")
+                client.subscribe(self.subscription_topic)
+                print(f"Subscribed to topic: {self.subscription_topic}")
+                
+                return client
+            except Exception as err:
+                print(f"Connection attempt {attempt + 1} failed: {err}")
+                print("Retrying in 3 seconds...")
+                attempt += 1
+                time.sleep(3)
+
+            print("Max MQTT connection attempts reached, resetting machine in 3 seconds...")
+            time.sleep(3)
+            machine.reset()
+            
+    def mqtt_reconnect(self):
+        print("Failed to connect to the MQTT Broker. Reconnecting...")
+        time.sleep(5)
+        self.client = self.mqttConnect()
 
     def publish_bme_values(self):
         bme = bme280.BME280(i2c=self.i2c)
