@@ -1,5 +1,12 @@
-# CS50x Final project 2024
+# Garage module
+### CS50x Final project
+<br>
 
+> [Project presentation video](https://www.youtube.com/)<br>
+> Click to view presentation video for my project
+
+
+#### Description:
 I'm into smart house and I love building and programming my own devices.
 I had an idea that I would like to control my garage door locally without depending on a cloud service.
 
@@ -9,6 +16,7 @@ so I also could control lights in the garage, log temperature, humidity and atmo
 feedback from the garage door and a laser sensor to prevent the door from closing if an obstruction is detected.
 
 This is my CS50x final project!
+ 
 
 ## Hardware
 
