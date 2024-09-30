@@ -39,12 +39,23 @@ Breadboards, wires, leds, resistors and other small parts to build the hardware 
 
 ## Software
 The _Raspberry Pi Pico W_ is installed with a main python file I've developed. Some additional prewritten libraries
-are also installed to use some of the installed hardware. 
+are also installed to use some of the installed hardware.
+
+Prewritten libraries I've used:
+- ```umqtt.simple```
+- ```bme280```
+- ```micropython schedule```
 
 ### MQTT:
-MQTT (Message Queuing Telemetry Transport) is used to send commands and receive values from the controller.
+MQTT (Message Queuing Telemetry Transport) is used to send commands to and receive values and feedback from the controller.
+In ```main.py``` there is a MQTT callback function that subscribes to a given topic. The function has 3 different actions based on its input command.
+#### Over the air update:
+I've set up a local HTTP-server at my home. If an "over-the-air" update command is recieved by the MQTT callback funtion the program starts downloading
+the updated code from a given path on my server computer.
 
+#### Door trigger command:
 
+#### Request BME280 values
 
 
 
