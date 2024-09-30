@@ -51,7 +51,7 @@ class RaspberryPiPicoW:
 
         # Decide interval for tasks (seconds) and schedule tasks
         self.flashLedsInterval = 5
-        self.publishBmeInterval = 60
+        self.publishBMEInterval = 60
         self.publishDoorStateInterval = 60
         self.scheduleTasks()
 
@@ -130,7 +130,7 @@ class RaspberryPiPicoW:
             self.relayDoorTrigger.value(1)
         elif "BME" in message:
             # Command for requesting BME values outside scheduled time
-            if self.publishBmeValues():
+            if self.publishBMEValues():
                 self.client.publish("pipicow/info", "BME request succeeded")
             else:
                 self.client.publish("pipicow/info", "BME request failed")
@@ -151,7 +151,7 @@ class RaspberryPiPicoW:
         self.switchDoorObstructed.irq(trigger=Pin.IRQ_RISING, handler=self.doorObstructedHandler)
         self.sensorPIR.irq(trigger=Pin.IRQ_RISING, handler=self.sensorPirHandler)
 
-    def publishBmeValues(self):
+    def publishBMEValues(self):
         bme = bme280.BME280(i2c=self.i2c)
         try:
             self.client.publish("pipicow/bme280/temperature", bme.values[0])
@@ -177,7 +177,7 @@ class RaspberryPiPicoW:
     
     def scheduleTasks(self):
         schedule.every(self.flashLedsInterval).seconds.do(self.flashLeds)
-        schedule.every(self.publishBmeInterval).seconds.do(self.publishBmeValues)
+        schedule.every(self.publishBMEInterval).seconds.do(self.publishBMEValues)
         schedule.every(self.publishDoorStateInterval).seconds.do(self.publishDoorState)
 
     def doorOpenHandler(self, pin):
@@ -227,6 +227,6 @@ class RaspberryPiPicoW:
 if __name__ == "__main__":
     # Create an instance of the RaspberryPiPicoW class and start main
     picoDevice = RaspberryPiPicoW()
-    picoDevice.publishBmeValues()
+    picoDevice.publishBMEValues()
     picoDevice.publishDoorState()
     asyncio.run(picoDevice.main())
