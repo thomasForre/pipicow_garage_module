@@ -1,6 +1,6 @@
 # CS50x Final project
 
-I'm into smart house and I like building and programming my own devices.
+I'm into smart house and I love building and programming my own devices.
 I had an idea that I would like to control my garage door locally without depending on a cloud service.
 
 After some reasearch I found out that a _Raspberry Pi Pico W_ was what I was looking for.
