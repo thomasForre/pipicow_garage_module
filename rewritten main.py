@@ -18,7 +18,7 @@ from connections import *
 
 class RaspberryPiPicoW:
     def __init__(self):
-        # Initialize pins and MQTT parameters
+        # Initialize MQTT parameters and pins
         self.hassUsername = secrets.hassUsername
         self.hassPassword = secrets.hassPassword
         self.mqttServer = secrets.hassServer
@@ -61,9 +61,9 @@ class RaspberryPiPicoW:
             ntptime.settime()
             writeToLog(self, "Time synchronized successfully.")
             print("Time synchronized successfully.")
-        except Exception as e:
-            writeToLog(self, f"Failed to synchronize time: {e}")
-            print("Failed to synchronize time:", e)
+        except Exception as err:
+            writeToLog(self, f"Failed to synchronize time: {err}")
+            print("Failed to synchronize time:", err)
         
     def initializePins(self):
         self.switchDoorOpen = Pin(3, Pin.IN, Pin.PULL_DOWN)
@@ -129,8 +129,8 @@ class RaspberryPiPicoW:
         client.set_callback(self.mqttSubscriptionCallback)
         client.connect()
         client.subscribe(self.subscriptionTopic)
-        print(f'Connected to {self.mqttServer} MQTT Broker')
-        print(f'Subscribed to topic: "{self.subscriptionTopic}"')
+        print(f"Connected to {self.mqttServer} MQTT Broker")
+        print(f"Subscribed to topic: {self.subscriptionTopic}")
         return client
 
     def setupHandlers(self):
