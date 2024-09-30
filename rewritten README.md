@@ -29,33 +29,48 @@ Two mechanical limit switches, one for open and one for closed to get door posit
 Laser sensor to detect obstructions for the door to prevent remote operation if door is obstructed.
 
 ### Relays:
-- One 3.3 V is installed to trigger door operation, Start/Stop.
-- One 12 V relay to control signal from laser sensor.
-- One 24 V relay is installed to detect if door is moving. The door opener is providing a 24 V signal while door is moving.
+- One ```3.3 V relay``` is installed to trigger door operation, Start/Stop.
+- One ```12 V relay``` to control signal from laser sensor.
+- One ```24 V relay``` is installed to detect if door is moving. The door opener is providing a 24 V signal while door is moving.
 
 ##### Breadboards, wiring and small parts:
 Breadboards, wires, leds, resistors and other small parts to build the hardware is bought mostly from Aliexpress.
 
 
 ## Software
-The _Raspberry Pi Pico W_ is installed with a main python file I've developed. Some additional prewritten libraries
-are also installed to use some of the installed hardware.
+The _Raspberry Pi Pico W_ is installed with a main python file (main.py) that I've developed.
+The code and functions are written by me but I had chatGPT to convert the code into a class structure that helped me understand classes better
+and is now something I'll prefer to use for future projects. <br>
+
+The program will start automatically as soon as the microcontroller in connected to a 5 V power source.
+It will start its ```__init__``` method from the class which initializes neccecary pins, flags and handlers, connects to WIFI and MQTT broker, synchronize time with a NTP server
+and schedule tasks like publishing values via MQTT and flashing leds every given interval of seconds.
+I've set the led flashing function to run every 5 seconds to indicate that the system is running and publishing garage door state and BME280 values every 60 seconds.
+
+Some additional prewritten libraries are also imported to use some of the installed hardware.
 
 Prewritten libraries I've used:
 - ```umqtt.simple```
 - ```bme280```
 - ```micropython schedule```
 
+In addition I've imported a prewitten class for over the air update found here: [OTA](https://github.com/kevinmcaleer/ota). <br>
+I've modified the class a bit to suit my project better.
+
 ### MQTT:
-MQTT (Message Queuing Telemetry Transport) is used to send commands to and receive values and feedback from the controller.
+MQTT (Message Queuing Telemetry Transport) is used to send commands to and receive values and feedback from the microcontroller.
 In ```main.py``` there is a MQTT callback function that subscribes to a given topic. The function has 3 different actions based on its input command.
-#### Over the air update:
-I've set up a local HTTP-server at my home. If an "over-the-air" update command is recieved by the MQTT callback funtion the program starts downloading
-the updated code from a given path on my server computer.
+
+#### Over the air update command:
+I've set up a local HTTP-server at my home computer. If I would like to update the main.py I can instead of connecting the device to mye computer by cable send an "over-the-air" update command.
+If such command is recieved by the MQTT callback funtion the program starts downloading the updated main.py from a given path on my server computer.
+If successful the microcontroller (aka machine) will restart and run the newly installed program.
+
+
 
 #### Door trigger command:
 
-#### Request BME280 values
+#### Request BME280 values command:
 
 
 
