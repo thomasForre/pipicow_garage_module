@@ -1,4 +1,4 @@
-# CS50x Final project
+# CS50x Final project 2024
 
 I'm into smart house and I love building and programming my own devices.
 I had an idea that I would like to control my garage door locally without depending on a cloud service.
@@ -33,8 +33,9 @@ Laser sensor to detect obstructions for the door to prevent remote operation if 
 - One ```24 V relay``` is installed to detect if door is moving. The door opener is providing a 24 V signal while door is moving.
 
 ### Breadboards, wiring and small parts:
-Breadboards, wires, leds, resistors and other small parts to build the hardware is bought mostly from Aliexpress.
+Breadboards, wires, leds, resistors, and other small parts to build the hardware is bought mostly from Aliexpress.
 
+The microcontroller is powered from a 12 V source on the garage door opener which is stepped down to 5 V.
 
 ## Software
 The _Raspberry Pi Pico W_ is installed with a main python file (main.py) that I've developed.
@@ -62,17 +63,16 @@ MQTT (Message Queuing Telemetry Transport) is used to send commands to and recei
 In ```main.py``` there is a MQTT callback function that subscribes to a given topic. The function has 3 different actions based on its input command.
 
 #### Over the air update command:
-I've set up a local HTTP-server at my home computer. If I would like to update the main.py I can instead of connecting the device to mye computer by cable send an "over-the-air" update command.
-If such command is recieved by the MQTT callback funtion the program starts downloading the updated main.py from a given path on my server computer.
-If successfull, the microcontroller will restart and run the newly installed program.
+I've set up a local HTTP-server at my home computer. If I would like to update the main.py I can instead of connecting the device to my computer by cable send an "over-the-air" update command.
+If such command is recieved by the MQTT callback funtion, the program starts downloading the updated main.py from a given path on my server computer. If successfull, the microcontroller will restart and run the newly installed program.
 
 #### Door trigger command:
-If the message to the MQTT subscription topic contains a door trigger command, the microcontroller will send a 3.3 V signal to its defined GPIO which will pulse the door trigger relay for 500 ms and start/stop the opening/closing of the garage door based on the garage door openers internal circuit.
+If the message to the MQTT subscription topic contains a door trigger command, the microcontroller will send a 3.3 V signal to its defined GPIO which will pulse the door trigger relay for 500 ms to start/stop the opening/closing of the garage door based on the garage door opener's internal circuit.
 
 #### Request BME280 values command:
 The temperature, humidity and pressure values from the BME280 are published every 60 seconds by schedule, but can be requested manually if needed by sending a BME request command. If such command is received by the MQTT callback function the function will then immediately publish the values to the given MQTT topic.
 
-All commands publish information that the command is received. Other commands than the three predefined once are ignored followed with a MQTT message notifying the user that it's an unknown MQTT command.
+All commands publish information that the command is received. Other commands than the three predefined once are ignored followed by a MQTT message notifying the user that it's an unknown MQTT command.
 
 
 
