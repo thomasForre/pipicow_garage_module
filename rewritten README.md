@@ -12,8 +12,7 @@ I had an idea that I would like to control my garage door locally without depend
 
 After some research I found out that a _Raspberry Pi Pico W_ was what I was looking for.
 The _Raspberry Pi Pico W_ is capable of doing multiple things with it's GPIO's so I thought I would add more hardware to it
-so I also could control lights in the garage based on a motion sensor, log temperature, humidity and atmospheric pressure, install limit switches to get
-feedback from the garage door and a laser sensor to prevent the door from closing if an obstruction is detected.
+so I also could control lights in the garage based on a motion sensor, log temperature, humidity and atmospheric pressure, install limit switches to get feedback from the garage door and a laser sensor to prevent remote operation if an obstruction is detected.
 
 This is my CS50x final project!
  
