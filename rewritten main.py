@@ -30,7 +30,7 @@ class RaspberryPiPicoW:
         self.initializeFlags()
 
         # Flash LEDs on boot
-        asyncio.run(self.blinkLed(self.ledInternal, 1, 500))  # <-- Decide to use async blink or 
+        asyncio.run(self.blinkLed(self.ledInternal, 1, 500))  # <-- Decide to use async blink or flashLeds()
         asyncio.run(self.blinkLed(self.ledAlive, 1, 500))
         
         try:
