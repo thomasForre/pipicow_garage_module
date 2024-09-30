@@ -55,7 +55,7 @@ class RaspberryPiPicoW:
         self.publishDoorStateInterval = 60
         self.scheduleTasks()
 
-    def syncTime():
+    def syncTime(self):
         try:
             # Synchronize the time with an NTP server
             ntptime.settime()
@@ -123,13 +123,17 @@ class RaspberryPiPicoW:
                 time.sleep(0.25)
                 machine.reset()
         elif "door" in message:
+            # Command to trigger the garage door start/stop
             self.relayDoorTrigger.value(0)
             self.client.publish("pipicow/info", "door relay pulse")
             time.sleep(0.5)
             self.relayDoorTrigger.value(1)
         elif "BME" in message:
+            # Command for requesting BME values outside scheduled time
             if self.publishBmeValues():
-                self.client.publish("pipicow/info", 
+                self.client.publish("pipicow/info", "BME request succeeded")
+            else:
+                self.client.publish("pipicow/info", "BME request failed")
 
     def mqttConnect(self):
         client = MQTTClient(self.client_id, self.mqttServer, port=1883, user=self.hassUsername, password=self.hassPassword, keepalive=3600)
