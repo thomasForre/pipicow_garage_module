@@ -11,7 +11,7 @@ import asyncio
 import secrets
 import ntptime
 import schedule
-from otaUpdater import *
+from otaUpdater import *                    # <-- remember to update name casing to snake_case
 from machine import Pin, I2C, Timer
 from umqtt.simple import MQTTClient
 from connections import *
@@ -19,87 +19,87 @@ from connections import *
 class RaspberryPiPicoW:
     def __init__(self):
         # Initialize MQTT parameters and pins
-        self.hassUsername = secrets.hassUsername
-        self.hassPassword = secrets.hassPassword
-        self.mqttServer = secrets.hassServer
+        self.hass_username = secrets.hassUsername
+        self.hass_password = secrets.hassPassword
+        self.mqtt_server = secrets.hassServer
         self.client_id = 'PiPicoW'
-        self.subscriptionTopic = "pipicow"
+        self.subscription_topic = "pipicow"
 
         self.i2c = I2C(0, sda=Pin(0), scl=Pin(1), freq=400000)
-        self.initializePins()
-        self.initializeFlags()
+        self.initialize_pins()
+        self.initialize_flags()
 
         # Flash LEDs on boot
-        asyncio.run(self.blinkLed(self.ledInternal, 1, 500))  # <-- Decide to use async blink or flashLeds()
-        asyncio.run(self.blinkLed(self.ledAlive, 1, 500))
-        
+        asyncio.run(self.blink_led(self.led_internal, 1, 500))
+        asyncio.run(self.blink_led(self.led_alive, 1, 500))
+
         try:
-            wifiConnect()
+            wifiConnect()                                            # <-- remember to update name casing to snake_case
         except RuntimeError as err:
             print("Failed to connect to WIFI, resetting machine...")
-            self.writeToLog(str(err.args[0]) + str(err.args[1]))
+            self.write_to_log(str(err.args[0]) + str(err.args[1]))
             machine.reset()
 
         # Synchronize time with an NTP server
-        self.syncTime()
+        self.sync_time()
 
-        # Connenct to MQTT
-        self.client = self.mqttConnect()
+        # Connect to MQTT
+        self.client = self.mqtt_connect()
 
         # Set up handlers for GPIO interrupts
-        self.setupHandlers()
+        self.setup_handlers()
 
         # Decide interval for tasks (seconds) and schedule tasks
-        self.flashLedsInterval = 5
-        self.publishBMEInterval = 60
-        self.publishDoorStateInterval = 60
-        self.scheduleTasks()
+        self.flash_leds_interval = 5
+        self.publish_bme_interval = 60
+        self.publish_door_state_interval = 60
+        self.schedule_tasks()
 
-    def syncTime(self):
+    def sync_time(self):
         try:
             # Synchronize the time with an NTP server
             ntptime.settime()
-            writeToLog(self, "Time synchronized successfully.")
+            self.write_to_log("Time synchronized successfully.")
             print("Time synchronized successfully.")
         except Exception as err:
-            writeToLog(self, f"Failed to synchronize time: {err}")
+            self.write_to_log(f"Failed to synchronize time: {err}")
             print("Failed to synchronize time:", err)
-        
-    def initializePins(self):
-        self.switchDoorOpen = Pin(3, Pin.IN, Pin.PULL_DOWN)
-        self.switchDoorClosed = Pin(4, Pin.IN, Pin.PULL_DOWN)
-        self.relayDoorMoving = Pin(7, Pin.IN, Pin.PULL_DOWN)
-        self.switchDoorObstructed = Pin(8, Pin.IN, Pin.PULL_DOWN)
-        self.relayDoorTrigger = Pin(6, Pin.OUT, Pin.PULL_UP, value=1)
-        self.sensorPIR = Pin(9, Pin.IN, Pin.PULL_DOWN)
-        self.ledAlive = Pin(12, mode=Pin.OUT)
-        self.ledInternal = Pin("LED", Pin.OUT)
 
-    def initializeFlags(self):
-        self.doorStateOpen = False
-        self.doorStateClosed = False
-        self.doorStateMoving = False
-        self.doorStateObstructed = False
+    def initialize_pins(self):
+        self.switch_door_open = Pin(3, Pin.IN, Pin.PULL_DOWN)
+        self.switch_door_closed = Pin(4, Pin.IN, Pin.PULL_DOWN)
+        self.relay_door_moving = Pin(7, Pin.IN, Pin.PULL_DOWN)
+        self.switch_door_obstructed = Pin(8, Pin.IN, Pin.PULL_DOWN)
+        self.relay_door_trigger = Pin(6, Pin.OUT, Pin.PULL_UP, value=1)
+        self.sensor_pir = Pin(9, Pin.IN, Pin.PULL_DOWN)
+        self.led_alive = Pin(12, mode=Pin.OUT)
+        self.led_internal = Pin("LED", Pin.OUT)
 
-    async def blinkLed(self, led, nTimes, periodMs):  # <-- Use this blink function og flashLeds() ??
-        blinkSpeed = periodMs / 1000
-        for i in range(nTimes):
+    def initialize_flags(self):
+        self.door_state_open = False
+        self.door_state_closed = False
+        self.door_state_moving = False
+        self.door_state_obstructed = False
+
+    async def blink_led(self, led, n_times, period_ms):
+        blink_speed = period_ms / 1000
+        for i in range(n_times):
             led.toggle()
-            await asyncio.sleep(blinkSpeed)
+            await asyncio.sleep(blink_speed)
             led.toggle()
-            if i == nTimes - 1:
+            if i == n_times - 1:
                 return
-            await asyncio.sleep(blinkSpeed)
+            await asyncio.sleep(blink_speed)
 
-    def writeToLog(self, logString):
-        with open("log.txt", "a") as logFile:
-            logFile.write(self.perfectDateTime() + "\n")
-            logFile.write("   " + logString + "\n")
+    def write_to_log(self, log_string):
+        with open("log.txt", "a") as log_file:
+            log_file.write(self.perfect_date_time() + "\n")
+            log_file.write("   " + log_string + "\n")
 
-    def perfectDateTime(self):
-        DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+    def perfect_date_time(self):
+        days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
         now = time.localtime()
-        weekDay = DAYS[now[6]]
+        week_day = days[now[6]]
         seconds = str.format("{:02d}", now[5])
         minutes = str.format("{:02d}", now[4])
         hours = str.format("{:02d}", now[3])
@@ -107,15 +107,13 @@ class RaspberryPiPicoW:
         month = str.format("{:02d}", now[1])
         year = str(now[0])
 
-        timeString = f"{hours}:{minutes}:{seconds}"
-        dateString = f"{day}.{month}.{year}"
-        
-        # Output example: Fri 26.01.2024 08:57:15
-        return f"{weekDay} {dateString} {timeString}"
+        time_string = f"{hours}:{minutes}:{seconds}"
+        date_string = f"{day}.{month}.{year}"
 
-    def mqttSubscriptionCallback(self, topic, message):
+        return f"{week_day} {date_string} {time_string}"
+
+    def mqtt_subscription_callback(self, topic, message):
         if "OTA" in message:
-            # Command for over the air update is received
             self.client.publish("pipicow/info", "Update command received...")
             if ota_updater.download_and_install_update_if_available():
                 self.client.publish("pipicow/info", "Code updated, resetting machine...")
@@ -123,35 +121,33 @@ class RaspberryPiPicoW:
                 time.sleep(0.25)
                 machine.reset()
         elif "door" in message:
-            # Command to trigger the garage door start/stop
-            self.relayDoorTrigger.value(0)
+            self.relay_door_trigger.value(0)
             self.client.publish("pipicow/info", "door relay pulse")
             time.sleep(0.5)
-            self.relayDoorTrigger.value(1)
+            self.relay_door_trigger.value(1)
         elif "BME" in message:
-            # Command for requesting BME values outside scheduled time
-            if self.publishBMEValues():
+            if self.publish_bme_values():
                 self.client.publish("pipicow/info", "BME request succeeded")
             else:
                 self.client.publish("pipicow/info", "BME request failed")
 
-    def mqttConnect(self):
-        client = MQTTClient(self.client_id, self.mqttServer, port=1883, user=self.hassUsername, password=self.hassPassword, keepalive=3600)
-        client.set_callback(self.mqttSubscriptionCallback)
+    def mqtt_connect(self):
+        client = MQTTClient(self.client_id, self.mqtt_server, port=1883, user=self.hass_username, password=self.hass_password, keepalive=3600)
+        client.set_callback(self.mqtt_subscription_callback)
         client.connect()
-        client.subscribe(self.subscriptionTopic)
-        print(f"Connected to {self.mqttServer} MQTT Broker")
-        print(f"Subscribed to topic: {self.subscriptionTopic}")
+        client.subscribe(self.subscription_topic)
+        print(f"Connected to {self.mqtt_server} MQTT Broker")
+        print(f"Subscribed to topic: {self.subscription_topic}")
         return client
 
-    def setupHandlers(self):
-        self.switchDoorOpen.irq(trigger=Pin.IRQ_RISING, handler=self.doorOpenHandler)
-        self.switchDoorClosed.irq(trigger=Pin.IRQ_RISING, handler=self.doorClosedHandler)
-        self.relayDoorMoving.irq(trigger=Pin.IRQ_RISING | Pin.IRQ_FALLING, handler=self.doorMovingHandler)
-        self.switchDoorObstructed.irq(trigger=Pin.IRQ_RISING, handler=self.doorObstructedHandler)
-        self.sensorPIR.irq(trigger=Pin.IRQ_RISING, handler=self.sensorPirHandler)
+    def setup_handlers(self):
+        self.switch_door_open.irq(trigger=Pin.IRQ_RISING, handler=self.door_open_handler)
+        self.switch_door_closed.irq(trigger=Pin.IRQ_RISING, handler=self.door_closed_handler)
+        self.relay_door_moving.irq(trigger=Pin.IRQ_RISING | Pin.IRQ_FALLING, handler=self.door_moving_handler)
+        self.switch_door_obstructed.irq(trigger=Pin.IRQ_RISING, handler=self.door_obstructed_handler)
+        self.sensor_pir.irq(trigger=Pin.IRQ_RISING, handler=self.sensor_pir_handler)
 
-    def publishBMEValues(self):
+    def publish_bme_values(self):
         bme = bme280.BME280(i2c=self.i2c)
         try:
             self.client.publish("pipicow/bme280/temperature", bme.values[0])
@@ -159,63 +155,63 @@ class RaspberryPiPicoW:
             self.client.publish("pipicow/bme280/humidity", bme.values[2])
             return True
         except Exception as e:
-            self.writeToLog(f"Error publishing BME values: {e}")
+            self.write_to_log(f"Error publishing BME values: {e}")
             return False
 
-    def publishDoorState(self):
-        self.client.publish("pipicow/doorStateOpen", str(self.switchDoorOpen.value()))
-        self.client.publish("pipicow/doorStateClosed", str(self.switchDoorClosed.value()))
-        self.client.publish("pipicow/doorStateMoving", str(self.relayDoorMoving.value()))
-        self.client.publish("pipicow/doorStateObstructed", str(self.switchDoorObstructed.value()))
+    def publish_door_state(self):
+        self.client.publish("pipicow/doorStateOpen", str(self.switch_door_open.value()))
+        self.client.publish("pipicow/doorStateClosed", str(self.switch_door_closed.value()))
+        self.client.publish("pipicow/doorStateMoving", str(self.relay_door_moving.value()))
+        self.client.publish("pipicow/doorStateObstructed", str(self.switch_door_obstructed.value()))
 
-    def flashLeds(self):
-        self.ledAlive.toggle()
-        self.ledInternal.toggle()
+    def flash_leds(self):
+        self.led_alive.toggle()
+        self.led_internal.toggle()
         time.sleep(0.05)
-        self.ledAlive.toggle()
-        self.ledInternal.toggle()
-    
-    def scheduleTasks(self):
-        schedule.every(self.flashLedsInterval).seconds.do(self.flashLeds)
-        schedule.every(self.publishBMEInterval).seconds.do(self.publishBMEValues)
-        schedule.every(self.publishDoorStateInterval).seconds.do(self.publishDoorState)
+        self.led_alive.toggle()
+        self.led_internal.toggle()
 
-    def doorOpenHandler(self, pin):
+    def schedule_tasks(self):
+        schedule.every(self.flash_leds_interval).seconds.do(self.flash_leds)
+        schedule.every(self.publish_bme_interval).seconds.do(self.publish_bme_values)
+        schedule.every(self.publish_door_state_interval).seconds.do(self.publish_door_state)
+
+    def door_open_handler(self, pin):
         time.sleep_ms(100)
-        self.doorStateClosed = False
-        self.doorStateMoving = False
-        if not self.doorStateOpen:
-            self.doorStateOpen = True
+        self.door_state_closed = False
+        self.door_state_moving = False
+        if not self.door_state_open:
+            self.door_state_open = True
             self.client.publish("pipicow/doorState", "open")
 
-    def doorClosedHandler(self, pin):
+    def door_closed_handler(self, pin):
         time.sleep_ms(100)
-        self.doorStateOpen = False
-        self.doorStateMoving = False
-        if not self.doorStateClosed:
-            self.doorStateClosed = True
+        self.door_state_open = False
+        self.door_state_moving = False
+        if not self.door_state_closed:
+            self.door_state_closed = True
             self.client.publish("pipicow/doorState", "closed")
-            
-    def doorMovingHandler(self, pin):
+
+    def door_moving_handler(self, pin):
         time.sleep_ms(1000)
-        self.doorStateOpen = False
-        self.doorStateClosed = False
-        if not self.doorStateMoving:
-            self.doorStateMoving = True
+        self.door_state_open = False
+        self.door_state_closed = False
+        if not self.door_state_moving:
+            self.door_state_moving = True
             self.client.publish("pipicow/doorState", "moving")
         else:
-            self.doorStateMoving = False
+            self.door_state_moving = False
             self.client.publish("pipicow/doorState", "stopped")
 
-    def doorObstructedHandler(self, pin):
+    def door_obstructed_handler(self, pin):
         time.sleep_ms(100)
-        if not self.doorStateObstructed:
-            self.doorStateObstructed = True
+        if not self.door_state_obstructed:
+            self.door_state_obstructed = True
             self.client.publish("pipicow/doorState", "obstructed")
 
-    def sensorPirHandler(self, pin):
+    def sensor_pir_handler(self, pin):
         time.sleep_ms(100)
-        if self.sensorPIR.value():
+        if self.sensor_pir.value():
             self.client.publish("pipicow/pir", "motion")
 
     async def main(self):
@@ -226,7 +222,7 @@ class RaspberryPiPicoW:
 
 if __name__ == "__main__":
     # Create an instance of the RaspberryPiPicoW class and start main
-    picoDevice = RaspberryPiPicoW()
-    picoDevice.publishBMEValues()
-    picoDevice.publishDoorState()
-    asyncio.run(picoDevice.main())
+    pico_device = RaspberryPiPicoW()
+    pico_device.publish_bme_values()
+    pico_device.publish_door_state()
+    asyncio.run(pico_device.main())
