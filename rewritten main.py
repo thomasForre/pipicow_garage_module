@@ -30,7 +30,7 @@ class RaspberryPiPicoW:
         self.initializeFlags()
 
         # Flash LEDs on boot
-        asyncio.run(self.blinkLed(self.ledInternal, 1, 500))
+        asyncio.run(self.blinkLed(self.ledInternal, 1, 500))  # <-- Decide to use async blink or 
         asyncio.run(self.blinkLed(self.ledAlive, 1, 500))
         
         try:
@@ -81,7 +81,7 @@ class RaspberryPiPicoW:
         self.doorStateMoving = False
         self.doorStateObstructed = False
 
-    async def blinkLed(self, led, nTimes, periodMs):
+    async def blinkLed(self, led, nTimes, periodMs):  # <-- Use this blink function og flashLeds() ??
         blinkSpeed = periodMs / 1000
         for i in range(nTimes):
             led.toggle()
@@ -100,29 +100,36 @@ class RaspberryPiPicoW:
         DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
         now = time.localtime()
         weekDay = DAYS[now[6]]
-        sec = str.format("{:02d}", now[5])
-        min = str.format("{:02d}", now[4])
+        seconds = str.format("{:02d}", now[5])
+        minutes = str.format("{:02d}", now[4])
         hours = str.format("{:02d}", now[3])
         day = str.format("{:02d}", now[2])
         month = str.format("{:02d}", now[1])
         year = str(now[0])
 
-        timeString = hours + ":" + min + ":" + sec
-        dateString = day + "." + month + "." + year
-        return weekDay + " " + dateString + " @ " + timeString
+        timeString = f"{hours}:{minutes}:{seconds}"
+        dateString = f"{day}.{month}.{year}"
+        
+        # Output example: Fri 26.01.2024 08:57:15
+        return f"{weekDay} {dateString} {timeString}"
 
     def mqttSubscriptionCallback(self, topic, message):
         if "OTA" in message:
+            # Command for over the air update is received
             self.client.publish("pipicow/info", "Update command received...")
             if ota_updater.download_and_install_update_if_available():
                 self.client.publish("pipicow/info", "Code updated, resetting machine...")
+                print("Code updated, resetting machine...")
                 time.sleep(0.25)
                 machine.reset()
-        else:
+        elif "door" in message:
             self.relayDoorTrigger.value(0)
             self.client.publish("pipicow/info", "door relay pulse")
             time.sleep(0.5)
             self.relayDoorTrigger.value(1)
+        elif "BME" in message:
+            if self.publishBmeValues():
+                self.client.publish("pipicow/info", 
 
     def mqttConnect(self):
         client = MQTTClient(self.client_id, self.mqttServer, port=1883, user=self.hassUsername, password=self.hassPassword, keepalive=3600)
