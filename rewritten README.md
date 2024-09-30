@@ -72,6 +72,8 @@ If the message to the MQTT subscription topic contains a door trigger command, t
 #### Request BME280 values command:
 The temperature, humidity and pressure values from the BME280 are published every 60 seconds by schedule, but can be requested manually if needed by sending a BME request command. If such command is received by the MQTT callback function the function will then immediately publish the values to the given MQTT topic.
 
+All commands publish information that the command is received. Other commands than the three predefined once are ignored followed with a MQTT message notifying the user that it's an unknown MQTT command.
+
 
 
 
