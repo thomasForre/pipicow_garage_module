@@ -1,10 +1,12 @@
-# Connect Raspberry Pi PicoW to WIFI and MQTT
-# Publish temperature, humidity and pressure
-# Publish garage door state
+"""
+Connect Raspberry Pi PicoW to WIFI and MQTT
+Publish temperature, humidity and pressure
+Publish garage door state
 
-# Main.py rewritten to a class structure by chatGTP
+Main.py rewritten to a class structure by chatGT
+"""
 
-# import logging                           # <-- Start use logging instead of using the write_to_log function
+# import logging                           # <-- Start use logger instead of using the write_to_log function
 import sys 
 import time
 import bme280
@@ -127,21 +129,24 @@ class RaspberryPiPicoW:
     def mqtt_subscription_callback(self, topic, message):
         if "OTA" in message:
             self.client.publish("pipicow/info", "Update command received...")
+            # try:
             if ota_updater.download_and_install_update_if_available():
                 self.client.publish("pipicow/info", "Code updated, resetting machine...")
                 print("Code updated, resetting machine...")
-                time.sleep(0.25)
+                time.sleep_ms(500)
                 machine.reset()
         elif "door" in message:
             self.relay_door_trigger.value(0)
-            self.client.publish("pipicow/info", "door relay pulse")
-            time.sleep(0.5)
+            self.client.publish("pipicow/info", "Door relay pulse")
+            time.sleep_ms(500) # Time to hold relay closed
             self.relay_door_trigger.value(1)
         elif "BME" in message:
             if self.publish_bme_values():
                 self.client.publish("pipicow/info", "BME request succeeded")
             else:
                 self.client.publish("pipicow/info", "BME request failed")
+        else:
+            self.client.publish("pipicow/info", "Unknown mqtt command")
 
     def mqtt_connect(self):
         max_attempts = 5
@@ -174,8 +179,8 @@ class RaspberryPiPicoW:
         self.client = self.mqttConnect()
 
     def publish_bme_values(self):
-        bme = bme280.BME280(i2c=self.i2c)
         try:
+            bme = bme280.BME280(i2c=self.i2c) # Initialize the BME sensor
             self.client.publish("pipicow/bme280/temperature", bme.values[0])
             self.client.publish("pipicow/bme280/pressure", bme.values[1])
             self.client.publish("pipicow/bme280/humidity", bme.values[2])
@@ -194,7 +199,7 @@ class RaspberryPiPicoW:
     def flash_leds(self):
         self.led_alive.toggle()
         self.led_internal.toggle()
-        time.sleep(0.05)
+        time.sleep_ms(50)
         self.led_alive.toggle()
         self.led_internal.toggle()
 
@@ -209,7 +214,7 @@ class RaspberryPiPicoW:
         self.door_state_moving = False
         if not self.door_state_open:
             self.door_state_open = True
-            self.client.publish("pipicow/doorState", "open")
+            self.client.publish("pipicow/doorState", "open")        # <-- Change topic to snake_case
 
     def door_closed_handler(self, pin):
         time.sleep_ms(100)
@@ -217,7 +222,7 @@ class RaspberryPiPicoW:
         self.door_state_moving = False
         if not self.door_state_closed:
             self.door_state_closed = True
-            self.client.publish("pipicow/doorState", "closed")
+            self.client.publish("pipicow/doorState", "closed")        # <-- Change topic to snake_case
 
     def door_moving_handler(self, pin):
         time.sleep_ms(1000)
@@ -225,16 +230,16 @@ class RaspberryPiPicoW:
         self.door_state_closed = False
         if not self.door_state_moving:
             self.door_state_moving = True
-            self.client.publish("pipicow/doorState", "moving")
+            self.client.publish("pipicow/doorState", "moving")        # <-- Change topic to snake_case
         else:
             self.door_state_moving = False
-            self.client.publish("pipicow/doorState", "stopped")
+            self.client.publish("pipicow/doorState", "stopped")        # <-- Change topic to snake_case
 
     def door_obstructed_handler(self, pin):
         time.sleep_ms(100)
         if not self.door_state_obstructed:
             self.door_state_obstructed = True
-            self.client.publish("pipicow/doorState", "obstructed")
+            self.client.publish("pipicow/doorState", "obstructed")    # <-- Change topic to snake_case
 
     def sensor_pir_handler(self, pin):
         time.sleep_ms(100)
