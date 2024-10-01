@@ -66,12 +66,12 @@ Pre-written libraries I've used:
 In addition I've imported a pre-witten class for over the air update found here: [OTA](https://github.com/kevinmcaleer/ota). <br>
 I've modified the class a bit to suit my project better.
 
-### MQTT:
+### MQTT
 MQTT (Message Queuing Telemetry Transport) is used to send commands to and receive values and feedback from the microcontroller.
 In ```main.py``` there is a MQTT callback function that subscribes to a specific topic. The function has 3 different actions based on its input command.
 
 #### Over the air update command:
-I've set up a local HTTP server at my home computer. If I would like to update the main.py I can instead of connecting the device to my computer by cable send an "over-the-air" update command.
+I've set up a local HTTP server at my home computer. If I would like to update the main.py I can instead of connecting the device to my computer by cable, send an "over-the-air" update command.
 If such command is recieved by the MQTT callback function, the program starts downloading the updated main.py from a given path on my server computer. If successful, the microcontroller will restart and run the newly installed program.
 
 #### Door trigger command:
