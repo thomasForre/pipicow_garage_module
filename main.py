@@ -239,7 +239,7 @@ class RaspberryPiPicoW:
         time.sleep_ms(100)
         if not self.door_state_obstructed:
             self.door_state_obstructed = True
-            self.client.publish("pipicow/doorState", "obstructed")    # <-- Change topic to snake_case
+            self.client.publish("pipicow/doorState", "obstructed")    """ <-- Change topic to snake_case """
 
     def sensor_pir_handler(self, pin):
         time.sleep_ms(100)
