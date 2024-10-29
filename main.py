@@ -1,84 +1,90 @@
 """
-Connect Raspberry Pi PicoW to WIFI and MQTT
-Publish temperature, humidity and pressure
-Publish garage door state
+Connect Raspberry Pi Pico W to WIFI and MQTT
+Publish temperature, humidity and pressure via MQTT
+Publish garage door state via MQTT
 
-Main.py rewritten to a class structure by chatGT
 """
-
-# import logging                           # <-- Start use logger instead of using the write_to_log function
-import sys 
-import time
-import bme280
 import asyncio
-import secrets
+import json
+import logging
 import ntptime
+import time
+
+import bme280
 import schedule
-from otaUpdater import *                    # <-- remember to update name casing to snake_case
 from machine import Pin, I2C, Timer
 from umqtt.simple import MQTTClient
-from connections import *
 
+import connections
+import helpers
+from ota_updater import *
+import secrets
 
 class RaspberryPiPicoW:
     def __init__(self):
+       
+        # Setup logging
+        logging.basicConfig(filename="app.log",
+                            level=logging.INFO,
+                            format="%(asctime)s - %(levelname)s - %(message)s")
+        
+        # Synchronie time with an NTP server
+        if helpers.sync_time():
+            logging.info("Time sync successful")
+
+        logging.info("RaspberryPiPicoW class initialized")
+        
         # Initialize MQTT parameters and pins
-        self.hass_username = secrets.hassUsername
-        self.hass_password = secrets.hassPassword
-        self.mqtt_server = secrets.hassServer
+        self.hass_username = secrets.hass_username
+        self.hass_password = secrets.hass_password
+        self.mqtt_server = secrets.hass_server
         self.client_id = 'PiPicoW'
         self.subscription_topic = "pipicow"
-
+        
+        # Initialize I2C for BME280 (temperature, humidity and pressure) Breadboard index 1 and 2
         self.i2c = I2C(0, sda=Pin(0), scl=Pin(1), freq=400000)
+        
         self.initialize_pins()
         self.initialize_flags()
+        
+        # Initialize LEDs to off and flash LEDs on boot
+        self.led_alive.value(0)
+        self.led_internal.value(0)
+        asyncio.run(helpers.blink_led(self.led_internal, 1, 500))
+        asyncio.run(helpers.blink_led(self.led_alive, 1, 500))
 
-        # Flash LEDs on boot
-        asyncio.run(self.blink_led(self.led_internal, 1, 500))
-        asyncio.run(self.blink_led(self.led_alive, 1, 500))
-
+        # Connect to wifi
         try:
-            wifiConnect()                                            # <-- remember to update name casing to snake_case
+            connection_info = connections.wifi_connect()
+            logging.info(f"Connected to {connection_info['ssid']} with IP {connection_info['device_ip']}")
         except RuntimeError as err:
+            print(str(err.args[0]) + str(err.args[1]))
             print("Failed to connect to WIFI, resetting machine...")
-            self.write_to_log(str(err.args[0]) + str(err.args[1]))
+#             logging.error(f"Failed to connect to WIFI: { err } Resetting machine...")
             machine.reset()
-
-        # Synchronize time with an NTP server
-        self.sync_time()
-
+        
         # Connect to MQTT
         self.client = self.mqtt_connect()
 
         # Set up handlers for GPIO interrupts
         self.setup_handlers()
-
+        
         # Decide interval for tasks (seconds) and schedule tasks
         self.flash_leds_interval = 5
         self.publish_bme_interval = 60
         self.publish_door_state_interval = 60
         self.schedule_tasks()
+        
+        self.last_door_trigger = 0
 
-    
-    def sync_time(self):
-        try:
-            # Synchronize the time with an NTP server
-            ntptime.settime()
-            self.write_to_log("Time synchronized successfully.")
-            print("Time synchronized successfully.")
-            return True
-        except Exception as err:
-            self.write_to_log(f"Failed to synchronize time: {err}")
-            print("Failed to synchronize time:", err)
-            return False
 
     def initialize_pins(self):
-        self.switch_door_open = Pin(3, Pin.IN, Pin.PULL_DOWN)
-        self.switch_door_closed = Pin(4, Pin.IN, Pin.PULL_DOWN)
-        self.relay_door_moving = Pin(7, Pin.IN, Pin.PULL_DOWN)
-        self.switch_door_obstructed = Pin(8, Pin.IN, Pin.PULL_DOWN)
-        self.relay_door_trigger = Pin(6, Pin.OUT, Pin.PULL_UP, value=1)
-        self.sensor_pir = Pin(9, Pin.IN, Pin.PULL_DOWN)
+        self.switch_door_open = Pin(3, Pin.IN, Pin.PULL_DOWN)            # BOARD INDEX 5  | Limit switch OPEN
+        self.switch_door_closed = Pin(4, Pin.IN, Pin.PULL_DOWN)          # BOARD INDEX 6  | Limit switch CLOSED
+        self.relay_door_moving = Pin(7, Pin.IN, Pin.PULL_DOWN)           # BOARD INDEX 10 | Door moving sensor
+        self.switch_door_obstructed = Pin(8, Pin.IN, Pin.PULL_DOWN)      # BOARD INDEX 11 | IR beam obstruction sensor
+        self.relay_door_trigger = Pin(6, Pin.OUT, Pin.PULL_UP, value=1)  # BOARD INDEX 09 | Relay to trigger door, initialized to HIGH since relay is active LOW
+        self.sensor_pir = Pin(9, Pin.IN, Pin.PULL_DOWN)                  # BOARD INDEX 12 | PIR motion sensor
         self.led_alive = Pin(12, mode=Pin.OUT)
         self.led_internal = Pin("LED", Pin.OUT)
     
@@ -94,38 +100,11 @@ class RaspberryPiPicoW:
         self.relay_door_moving.irq(trigger=Pin.IRQ_RISING | Pin.IRQ_FALLING, handler=self.door_moving_handler)
         self.switch_door_obstructed.irq(trigger=Pin.IRQ_RISING, handler=self.door_obstructed_handler)
         self.sensor_pir.irq(trigger=Pin.IRQ_RISING, handler=self.sensor_pir_handler)
-
-    async def blink_led(self, led, n_times, period_ms):
-        blink_speed = period_ms / 1000
-        for i in range(n_times):
-            led.toggle()
-            await asyncio.sleep(blink_speed)
-            led.toggle()
-            if i == n_times - 1:
-                return
-            await asyncio.sleep(blink_speed)
-
-    def write_to_log(self, log_string):
-        with open("log.txt", "a") as log_file:
-            log_file.write(self.perfect_date_time() + "\n")
-            log_file.write("   " + log_string + "\n")
-
-    def perfect_date_time(self):
-        days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-        now = time.localtime()
-        week_day = days[now[6]]
-        seconds = str.format("{:02d}", now[5])
-        minutes = str.format("{:02d}", now[4])
-        hours = str.format("{:02d}", now[3])
-        day = str.format("{:02d}", now[2])
-        month = str.format("{:02d}", now[1])
-        year = str(now[0])
-
-        time_string = f"{hours}:{minutes}:{seconds}"
-        date_string = f"{day}.{month}.{year}"
-
-        return f"{week_day} {date_string} {time_string}"
-
+    
+    def set_last_trigger(self):
+        self.last_door_trigger = time.time()
+        return
+        
     def mqtt_subscription_callback(self, topic, message):
         if "OTA" in message:
             self.client.publish("pipicow/info", "Update command received...")
@@ -136,10 +115,19 @@ class RaspberryPiPicoW:
                 time.sleep_ms(500)
                 machine.reset()
         elif "door" in message:
-            self.relay_door_trigger.value(0)
-            self.client.publish("pipicow/info", "Door relay pulse")
-            time.sleep_ms(500) # Time to hold relay closed
-            self.relay_door_trigger.value(1)
+            if self.last_door_trigger == 0 or self.last_door_trigger + 5 < time.time():
+                self.relay_door_trigger.value(0)
+                self.client.publish("pipicow/info", "Door relay pulse")
+                # Time to hold relay closed
+                time.sleep_ms(500)
+                self.relay_door_trigger.value(1)
+                
+                self.set_last_trigger()
+            else:
+                self.client.publish("pipicow/info", "Too early dor command")
+                return False                
+            
+            print(f"last_door_trigger, {self.last_door_trigger}")  
         elif "BME" in message:
             if self.publish_bme_values():
                 self.client.publish("pipicow/info", "BME request succeeded")
@@ -172,21 +160,19 @@ class RaspberryPiPicoW:
         print(f"Max MQTT connection attempts reached ({max_attempts}), resetting machine in 3 seconds...")
         time.sleep(3)
         machine.reset()
-            
-    def mqtt_reconnect(self):
-        print("Failed to connect to the MQTT Broker. Reconnecting...")
-        time.sleep(5)
-        self.client = self.mqttConnect()
 
     def publish_bme_values(self):
         try:
-            bme = bme280.BME280(i2c=self.i2c) # Initialize the BME sensor
-            self.client.publish("pipicow/bme280/temperature", bme.values[0])
-            self.client.publish("pipicow/bme280/pressure", bme.values[1])
-            self.client.publish("pipicow/bme280/humidity", bme.values[2])
+            # Initialize the BME sensor
+            bme = bme280.BME280(i2c=self.i2c)
+            bmeData = {
+                "temperature": bme.values[0],
+                "pressure": bme.values[1],
+                "humidity": bme.values[2]
+            }
+            self.client.publish("pipicow/bme280/data", json.dumps(bmeData))
             return True
         except Exception as err:
-            self.write_to_log(f"Error publishing BME values: {err}")
             print("Failed to publish BME values", err)
             return False
 
@@ -195,7 +181,7 @@ class RaspberryPiPicoW:
         self.client.publish("pipicow/doorStateClosed", str(self.switch_door_closed.value()))
         self.client.publish("pipicow/doorStateMoving", str(self.relay_door_moving.value()))
         self.client.publish("pipicow/doorStateObstructed", str(self.switch_door_obstructed.value()))
-
+    
     def flash_leds(self):
         self.led_alive.toggle()
         self.led_internal.toggle()
@@ -214,7 +200,7 @@ class RaspberryPiPicoW:
         self.door_state_moving = False
         if not self.door_state_open:
             self.door_state_open = True
-            self.client.publish("pipicow/doorState", "open")        # <-- Change topic to snake_case
+            self.client.publish("pipicow/door_state", "open")
 
     def door_closed_handler(self, pin):
         time.sleep_ms(100)
@@ -222,31 +208,35 @@ class RaspberryPiPicoW:
         self.door_state_moving = False
         if not self.door_state_closed:
             self.door_state_closed = True
-            self.client.publish("pipicow/doorState", "closed")        # <-- Change topic to snake_case
+            self.client.publish("pipicow/door_state", "closed")
 
     def door_moving_handler(self, pin):
-        time.sleep_ms(1000)
+        time.sleep_ms(100)
         self.door_state_open = False
         self.door_state_closed = False
         if not self.door_state_moving:
             self.door_state_moving = True
-            self.client.publish("pipicow/doorState", "moving")        # <-- Change topic to snake_case
-        else:
-            self.door_state_moving = False
-            self.client.publish("pipicow/doorState", "stopped")        # <-- Change topic to snake_case
+            self.client.publish("pipicow/door_state", "moving")
+#         else:
+#             self.door_state_moving = False
+#             self.client.publish("pipicow/door_state", "stopped")
 
     def door_obstructed_handler(self, pin):
         time.sleep_ms(100)
         if not self.door_state_obstructed:
             self.door_state_obstructed = True
-            self.client.publish("pipicow/doorState", "obstructed")    """ <-- Change topic to snake_case """
-
+            self.client.publish("pipicow/door_state", "obstructed")
+                
     def sensor_pir_handler(self, pin):
         time.sleep_ms(100)
         if self.sensor_pir.value():
             self.client.publish("pipicow/pir", "motion")
 
     async def main(self):
+        # Flash LEDs to indicate app start
+        for i in range(5):
+            self.flash_leds()
+        print("Application running!")
         while True:
             self.client.check_msg()
             schedule.run_pending()
