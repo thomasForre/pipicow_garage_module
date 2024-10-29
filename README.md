@@ -3,7 +3,7 @@
 <br>
 
 > [Project presentation video](https://www.youtube.com/)<br>
-> Click to view presentation video for my project
+> Presentation video is not yet created...
 
 
 #### Description:
